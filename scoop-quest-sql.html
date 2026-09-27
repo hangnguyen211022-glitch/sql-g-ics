@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scoop Quest: Your First Day with SQL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#8FD8F8; --sky2:#C6EDFB; --panel:#FFF8EE; --panel2:#FDEBD3;
+  --ink:#3B2418; --muted:#7A5A48; --line:#3B2418;
+  --straw:#E8457A; --mint:#5CC8A0; --cone:#E0A458; --coin:#F7C531;
+  --code-bg:#3B2418; --code-ink:#FFF3DC; --ok:#23895B; --err:#C8324A;
+  --hl:#FFE27A;
+  --pixel:"Press Start 2P", "Courier New", monospace;
+  --body:"Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"Space Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky:#1C2350; --sky2:#2A3270; --panel:#262B52; --panel2:#30366A;
+    --ink:#FFF1E0; --muted:#C3B7D9; --line:#0B0F2A;
+    --code-bg:#11163A; --code-ink:#FFF3DC; --ok:#5CD69A; --err:#FF7A8E; --hl:#6B5A1E;
+  }
+}
+:root[data-theme="dark"]{
+  --sky:#1C2350; --sky2:#2A3270; --panel:#262B52; --panel2:#30366A;
+  --ink:#FFF1E0; --muted:#C3B7D9; --line:#0B0F2A;
+  --code-bg:#11163A; --code-ink:#FFF3DC; --ok:#5CD69A; --err:#FF7A8E; --hl:#6B5A1E;
+}
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+*,*::before,*::after{ box-sizing:inherit; }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+body{
+  margin:0; min-height:100%; background:var(--sky); color:var(--ink);
+  font-family:var(--body); font-size:1rem; line-height:1.55;
+  background-image:
+    radial-gradient(circle at 12% 18%, var(--sky2) 0 38px, transparent 39px),
+    radial-gradient(circle at 16% 16%, var(--sky2) 0 30px, transparent 31px),
+    radial-gradient(circle at 84% 30%, var(--sky2) 0 34px, transparent 35px),
+    radial-gradient(circle at 88% 28%, var(--sky2) 0 26px, transparent 27px);
+  background-attachment:fixed;
+}
+button{ font:inherit; color:inherit; }
+:focus-visible{ outline:3px solid var(--straw); outline-offset:3px; }
+
+/* HUD */
+.hud{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:10;
+  display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;
+  padding:.6rem 1rem; background:var(--line); color:#FFF3DC;
+  font-family:var(--pixel); font-size:.62rem;
+}
+.hud .brand{ letter-spacing:.02em; }
+.pips{ display:flex; gap:4px; flex:1; min-width:120px; }
+.pip{ flex:1; height:8px; background:#5b4336; }
+.pip.done{ background:var(--mint); }
+.pip.now{ background:var(--coin); }
+.coins{ display:flex; align-items:center; gap:6px; }
+.coin-ico{ width:14px; height:14px; background:var(--coin); border:2px solid #B8860B; border-radius:50%; }
+.hud button{ background:none; border:2px solid #FFF3DC; color:#FFF3DC; padding:4px 6px; font-family:var(--pixel); font-size:.55rem; cursor:pointer; }
+
+/* stage */
+main{ max-width:880px; margin:0 auto; padding:1.25rem 1rem 3rem; }
+.shop{ position:relative; margin-top:18px; }
+.awning{
+  height:34px; border:4px solid var(--line); border-bottom:none;
+  background:repeating-linear-gradient(90deg, var(--straw) 0 44px, #FFF8EE 44px 88px);
+  position:relative;
+}
+.awning::after{
+  content:""; position:absolute; left:-4px; right:-4px; bottom:-14px; height:14px;
+  background:radial-gradient(circle at 22px 0, var(--straw) 0 22px, transparent 23px) 0 0/88px 14px repeat-x,
+             radial-gradient(circle at 66px 0, #FFF8EE 0 22px, transparent 23px) 0 0/88px 14px repeat-x;
+}
+.stage{
+  background:var(--panel); border:4px solid var(--line); box-shadow:8px 8px 0 var(--line);
+  padding:2rem 1.25rem 1.25rem; min-height:420px;
+}
+.world{ font-family:var(--pixel); font-size:.6rem; color:var(--muted); margin:0 0 .75rem; }
+h1,h2{ font-family:var(--pixel); line-height:1.5; margin:0 0 1rem; }
+h1{ font-size:clamp(1.1rem,4vw,1.8rem); }
+h2{ font-size:clamp(.8rem,2.6vw,1.05rem); }
+p{ margin:0 0 .9rem; max-width:64ch; }
+.muted{ color:var(--muted); }
+
+/* dialogue */
+.talk{ display:flex; gap:.9rem; align-items:flex-end; margin:1rem 0; }
+.talk svg{ flex:none; width:64px; height:auto; image-rendering:pixelated; }
+.bubble{
+  position:relative; flex:1; background:var(--panel2); border:3px solid var(--line);
+  padding:.8rem 1rem; min-height:4.2rem;
+}
+.bubble::before{ content:""; position:absolute; left:-12px; bottom:14px; border:9px solid transparent; border-right-color:var(--line); border-left:0; }
+.who{ font-family:var(--pixel); font-size:.55rem; color:var(--straw); display:block; margin-bottom:.35rem; }
+.bubble p{ margin:0; }
+
+/* buttons */
+.btn{
+  display:inline-flex; align-items:center; gap:.5rem; cursor:pointer;
+  font-family:var(--pixel); font-size:.65rem; line-height:1.4;
+  background:var(--straw); color:#fff; border:3px solid var(--line);
+  box-shadow:4px 4px 0 var(--line); padding:.8rem 1rem; transition:transform .06s, box-shadow .06s;
+}
+.btn:active{ transform:translate(4px,4px); box-shadow:0 0 0 var(--line); }
+.btn.alt{ background:var(--panel); color:var(--ink); }
+.btn.go{ background:var(--mint); color:#17352A; }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; }
+.row{ display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; margin-top:1rem; }
+.spacer{ flex:1; }
+
+/* tables */
+.tbl-wrap{ overflow-x:auto; border:3px solid var(--line); background:var(--panel); margin:.5rem 0 1rem; }
+table{ border-collapse:collapse; width:100%; font-size:.92rem; }
+caption{ text-align:left; font-family:var(--mono); font-weight:700; padding:.5rem .75rem; background:var(--line); color:#FFF3DC; }
+th,td{ padding:.5rem .75rem; text-align:left; border-bottom:2px dashed color-mix(in srgb, var(--line) 25%, transparent); white-space:nowrap; }
+th{ font-family:var(--mono); font-size:.85rem; background:var(--panel2); }
+td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+.col-hl{ background:var(--hl) !important; }
+.col-dim{ opacity:.35; }
+th.tap{ cursor:pointer; text-decoration:underline dotted; text-underline-offset:4px; }
+th.tap.seen{ text-decoration:none; }
+th.tap.seen::after{ content:" ✓"; color:var(--ok); }
+.pop-in{ animation:popin .35s ease-out; }
+@keyframes popin{ from{ transform:scale(.96); opacity:0; } to{ transform:none; opacity:1; } }
+
+.stats{ display:flex; gap:1rem; flex-wrap:wrap; margin:.5rem 0 1rem; }
+.stat{ border:3px solid var(--line); padding:.6rem .9rem; background:var(--panel2); }
+.stat b{ font-family:var(--pixel); font-size:.9rem; display:block; margin-bottom:.25rem; }
+.colinfo{ border-left:6px solid var(--mint); padding:.4rem .8rem; background:var(--panel2); min-height:2.8rem; }
+
+/* sql defs */
+.uses{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem; margin:1rem 0; }
+.use{ border:3px solid var(--line); padding:.8rem; background:var(--panel2); }
+.use b{ display:block; font-family:var(--pixel); font-size:.6rem; margin-bottom:.4rem; color:var(--straw); }
+
+/* phone notification */
+.notif{
+  display:flex; gap:.75rem; align-items:flex-start; border:3px solid var(--line);
+  background:var(--panel2); padding:.8rem 1rem; box-shadow:5px 5px 0 var(--line); margin:1rem 0; max-width:520px;
+  animation:slide .5s cubic-bezier(.2,1.4,.4,1);
+}
+.notif .av{ flex:none; width:40px; height:40px; background:var(--straw); color:#fff; font-family:var(--pixel); font-size:.7rem; display:grid; place-items:center; border:3px solid var(--line); }
+.notif small{ display:block; color:var(--muted); font-size:.78rem; }
+@keyframes slide{ from{ transform:translateY(-30px); opacity:0; } to{ transform:none; opacity:1; } }
+
+/* code */
+.code{
+  font-family:var(--mono); background:var(--code-bg); color:var(--code-ink);
+  padding:1rem; border:3px solid var(--line); overflow-x:auto; font-size:1rem;
+}
+.kw{ color:#FF8FB5; font-weight:700; }
+.id{ color:#8FE3C0; }
+.build{ display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:flex-start; min-height:110px; padding:1.2rem 1rem; }
+.tok{ display:flex; flex-direction:column; align-items:center; gap:.5rem; opacity:0; transform:translateY(10px); transition:opacity .35s, transform .35s; }
+.tok.on{ opacity:1; transform:none; }
+.tok code{ font-family:var(--mono); font-size:1.25rem; padding:.2rem .45rem; }
+.tok code.ph{ border:2px dashed var(--coin); color:var(--coin); }
+.tok code.filled{ border:2px solid var(--mint); color:#8FE3C0; animation:popin .4s; }
+.tok small{ font-family:var(--body); font-size:.72rem; color:#E9D8C4; max-width:9ch; text-align:center; line-height:1.3; }
+
+/* scramble */
+.slots{ display:flex; flex-wrap:wrap; gap:.5rem; min-height:64px; padding:.75rem; border:3px dashed var(--line); background:var(--code-bg); margin:.75rem 0; align-items:center; }
+.slots:empty::before{ content:"Tap the blocks below in order"; color:#E9D8C4; font-size:.85rem; }
+.bank{ display:flex; flex-wrap:wrap; gap:.6rem; margin:.5rem 0 1rem; }
+.tile{
+  font-family:var(--mono); font-weight:700; font-size:1rem; cursor:pointer;
+  background:var(--coin); color:#3B2418; border:3px solid var(--line); box-shadow:3px 3px 0 var(--line);
+  padding:.55rem .8rem;
+}
+.tile.kwt{ background:var(--straw); color:#fff; }
+.tile.used{ visibility:hidden; }
+.slots .tile{ box-shadow:none; }
+.shake{ animation:shake .4s; }
+@keyframes shake{ 20%,60%{ transform:translateX(-6px);} 40%,80%{ transform:translateX(6px);} }
+
+/* mission editor */
+.goal{ border:3px solid var(--line); background:var(--panel2); padding:.75rem 1rem; margin:.75rem 0; }
+.goal b{ font-family:var(--pixel); font-size:.58rem; color:var(--straw); }
+.editor{ display:flex; border:3px solid var(--line); background:var(--code-bg); }
+.editor span{ font-family:var(--mono); color:var(--coin); padding:.8rem 0 .8rem .8rem; }
+.editor input{
+  flex:1; min-width:0; background:transparent; border:none; color:var(--code-ink);
+  font-family:var(--mono); font-size:1rem; padding:.8rem; outline:none;
+}
+.editor:focus-within{ outline:3px solid var(--straw); outline-offset:2px; }
+.chips{ display:flex; flex-wrap:wrap; gap:.4rem; margin:.6rem 0; }
+.chip{ font-family:var(--mono); font-size:.85rem; cursor:pointer; background:var(--panel2); border:2px solid var(--line); padding:.3rem .55rem; }
+.chip.k{ color:var(--straw); font-weight:700; }
+.fb{ margin:.75rem 0; padding:.7rem 1rem; border:3px solid var(--line); display:none; }
+.fb.show{ display:block; }
+.fb.ok{ background:color-mix(in srgb, var(--ok) 18%, var(--panel)); }
+.fb.err{ background:color-mix(in srgb, var(--err) 16%, var(--panel)); }
+.fb.warn{ background:color-mix(in srgb, var(--coin) 28%, var(--panel)); }
+.two{ display:grid; grid-template-columns:1fr; gap:1rem; }
+@media (min-width:760px){ .two{ grid-template-columns:1fr 1fr; } }
+.lbl{ font-family:var(--pixel); font-size:.55rem; color:var(--muted); margin:.25rem 0; }
+
+/* coin burst */
+.burst{ position:fixed; left:50%; top:40%; font-family:var(--pixel); font-size:1rem; color:var(--coin);
+  text-shadow:3px 3px 0 var(--line); pointer-events:none; animation:burst 1s ease-out forwards; z-index:30; }
+@keyframes burst{ from{ transform:translate(-50%,0) scale(.6); opacity:1;} to{ transform:translate(-50%,-90px) scale(1.2); opacity:0;} }
+
+/* title */
+.title{ text-align:center; padding:1rem 0; }
+.title svg{ width:120px; margin:0 auto 1rem; display:block; image-rendering:pixelated; animation:bob 1.6s ease-in-out infinite; }
+@keyframes bob{ 50%{ transform:translateY(-8px);} }
+.title p{ margin-left:auto; margin-right:auto; }
+.blink{ animation:blink 1s steps(2) infinite; }
+@keyframes blink{ 50%{ opacity:0; } }
+.badge{ font-family:var(--pixel); font-size:.7rem; display:inline-block; background:var(--coin); color:#3B2418; border:3px solid var(--line); padding:.7rem 1rem; box-shadow:4px 4px 0 var(--line); margin:.5rem 0 1rem; }
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation:none !important; transition:none !important; }
+  .tok{ opacity:1; transform:none; }
+}
+</style>
+</head>
+<body>
+<header class="hud">
+  <span class="brand">SCOOP QUEST</span>
+  <div class="pips" id="pips" aria-label="Progress"></div>
+  <span class="coins"><span class="coin-ico" aria-hidden="true"></span><span id="coins">0</span></span>
+  <button id="snd" aria-pressed="true">SOUND ON</button>
+</header>
+
+<main>
+  <div class="shop">
+    <div class="awning" aria-hidden="true"></div>
+    <section class="stage" id="stage" aria-live="polite"></section>
+  </div>
+</main>
+
+<script>
+/* ---------- data ---------- */
+const TABLE = "daily_sales";
+const COLS = ["flavor","price","customers","revenue"];
+const NUM = { price:true, customers:true, revenue:true };
+const RAW = [
+  ["Vanilla Bean",3.50,42],["Double Chocolate",3.50,55],["Strawberry Swirl",3.75,31],
+  ["Mint Choc Chip",4.00,27],["Mango Sorbet",4.25,38],["Coconut Pandan",4.50,46],
+  ["Salted Caramel",4.50,33],["Cookies & Cream",4.00,29]
+];
+const ROWS = RAW.map(([flavor,price,customers]) => ({flavor,price,customers,revenue:+(price*customers).toFixed(2)}));
+const COLINFO = {
+  flavor:"The name of each ice cream flavor. Text.",
+  price:"What one scoop costs, in dollars.",
+  customers:"How many customers bought this flavor today. Higher = selling fast.",
+  revenue:"Money this flavor made today: price × customers."
+};
+const fmt = (c,v) => c==="price"||c==="revenue" ? "$"+v.toFixed(2) : v;
+
+/* ---------- state ---------- */
+let coins = 0, stageIx = 0, sound = true;
+const $ = s => document.querySelector(s);
+const stage = $("#stage");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- sound ---------- */
+let actx;
+function tone(seq){
+  if(!sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    let t = actx.currentTime;
+    seq.forEach(([f,d])=>{
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type="square"; o.frequency.value=f; g.gain.value=.05;
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.stop(t+d); t+=d*.9;
+    });
+  }catch(e){}
+}
+const sfx = {
+  coin:()=>tone([[988,.08],[1319,.25]]),
+  ding:()=>tone([[1175,.1],[1568,.18]]),
+  bad:()=>tone([[196,.12],[165,.2]]),
+  click:()=>tone([[660,.04]]),
+  win:()=>tone([[523,.1],[659,.1],[784,.1],[1047,.3]])
+};
+$("#snd").onclick = e => { sound=!sound; e.target.textContent = sound?"SOUND ON":"SOUND OFF"; e.target.setAttribute("aria-pressed",sound); };
+
+function addCoins(n){
+  coins += n; $("#coins").textContent = coins; sfx.coin();
+  const b = document.createElement("div"); b.className="burst"; b.textContent="+"+n+" coins";
+  document.body.appendChild(b); setTimeout(()=>b.remove(),1000);
+}
+
+/* ---------- pixel mascot (original cone character) ---------- */
+function mascot(){
+  const map = [
+    "....PPPP....","..PPPPPPPP..",".PPWPPPPPPP.",".PPPPPPPPPP.","PPKPPPPKPPPP","PPKPPPPKPPPP",
+    "PPPPPRRPPPPP",".PPPPPPPPPP.","..CCCCCCCC..","..CcCcCcCC..","...CCCCCC...","...CcCcCC...","....CCCC....",".....CC....."
+  ];
+  const col = {P:"#F7A6C4",W:"#FFFFFF",K:"#3B2418",R:"#E8457A",C:"#E0A458",c:"#B97A35"};
+  let r="";
+  map.forEach((row,y)=>[...row].forEach((ch,x)=>{ if(col[ch]) r+=`<rect x="${x}" y="${y}" width="1" height="1" fill="${col[ch]}"/>`; }));
+  return `<svg viewBox="0 0 12 14" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
+}
+
+/* ---------- helpers ---------- */
+function tableHTML(cols, {caption=TABLE, hl=[], dim=false, tap=false, cls=""}={}){
+  const head = cols.map(c=>`<th class="${NUM[c]?"num ":""}${hl.includes(c)?"col-hl ":""}${dim&&!hl.includes(c)?"col-dim ":""}${tap?"tap":""}" ${tap?`data-col="${c}" tabindex="0" role="button"`:""}>${c}</th>`).join("");
+  const body = ROWS.map(r=>"<tr>"+cols.map(c=>`<td class="${NUM[c]?"num ":""}${hl.includes(c)?"col-hl ":""}${dim&&!hl.includes(c)?"col-dim":""}">${fmt(c,r[c])}</td>`).join("")+"</tr>").join("");
+  return `<div class="tbl-wrap ${cls}"><table><caption>${caption}</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function say(who, text){
+  return `<div class="talk">${mascot()}<div class="bubble"><span class="who">${who}</span><p class="tw">${text}</p></div></div>`;
+}
+function typewrite(el){
+  if(!el || reduced) return;
+  const full = el.innerHTML; el.textContent=""; let i=0;
+  const tick = () => {
+    if(full[i]==="<"){ const j = full.indexOf(">",i); i=j+1; } else i++;
+    el.innerHTML = full.slice(0,i);
+    if(i<full.length) el._t = setTimeout(tick,16);
+  };
+  tick();
+  el.closest(".bubble").onclick = () => { clearTimeout(el._t); el.innerHTML = full; };
+}
+function world(n){ return `<p class="world">WORLD 1-${n} · DAY 1</p>`; }
+function renderPips(){
+  $("#pips").innerHTML = SCENES.map((_,i)=>`<span class="pip ${i<stageIx?"done":i===stageIx?"now":""}"></span>`).join("");
+}
+function go(i){
+  stageIx = i; renderPips();
+  stage.innerHTML = ""; SCENES[i]();
+  typewrite(stage.querySelector(".tw"));
+  stage.scrollIntoView({block:"start", behavior: reduced?"auto":"smooth"});
+  const h = stage.querySelector("h1,h2"); if(h){ h.tabIndex=-1; h.focus({preventScroll:true}); }
+}
+const next = () => go(stageIx+1);
+
+/* ---------- SQL checker ---------- */
+function runSQL(q){
+  const s = q.trim().replace(/\s+/g," ");
+  if(!s) return {err:"Type a query first. Every query starts with SELECT."};
+  if(!/^select\b/i.test(s)) return {err:"A query that pulls data always starts with SELECT."};
+  if(!/\bfrom\b/i.test(s)) return {err:`Tell the database where to look: add FROM ${TABLE} after your columns.`};
+  const m = s.match(/^select\s+(.*?)\s+from\s+(\S+?)\s*;?\s*$/i);
+  if(!m) return {err:`Check the order: SELECT columns FROM ${TABLE};`};
+  const [ , colPart, tbl] = m;
+  if(tbl.toLowerCase() !== TABLE) return {err:`There's no table called "${tbl}". The shop's table is ${TABLE}.`};
+  if(!colPart.trim()) return {err:"Name at least one column between SELECT and FROM."};
+  const parts = colPart.split(",").map(x=>x.trim());
+  if(parts.some(p=>!p)) return {err:"There's an extra comma. Commas go between column names, not after the last one."};
+  if(parts.length===1 && parts[0]==="*") return {cols:[...COLS], star:true};
+  const cols=[];
+  for(const p of parts){
+    if(p==="*") return {err:"* already means every column, so use it on its own: SELECT * FROM daily_sales;"};
+    if(/\s/.test(p)) return {err:`"${p}" looks like two columns. Separate columns with a comma: ${p.split(/\s+/).join(", ")}`};
+    const c = p.toLowerCase();
+    if(!COLS.includes(c)) return {err:`There's no column called "${p}". The columns are: ${COLS.join(", ")}.`};
+    cols.push(c);
+  }
+  return {cols};
+}
+
+/* ---------- scenes ---------- */
+const SCENES = [
+
+/* title */
+() => {
+  stage.innerHTML = `<div class="title">${mascot()}
+    <h1>Scoop Quest</h1>
+    <p>Your first day as the data analyst at Scoop &amp; Co. Learn to ask the shop's database questions with SQL.</p>
+    <div class="row" style="justify-content:center"><button class="btn" id="start">Start day 1</button></div>
+    <p class="muted blink" style="margin-top:1.2rem;font-family:var(--pixel);font-size:.55rem">PRESS START</p></div>`;
+  $("#start").onclick = () => { sfx.win(); next(); };
+},
+
+/* onboarding */
+() => {
+  const lines = [
+    "Welcome to Scoop &amp; Co.! I'm Pip, and I'll show you around on your first day as our data analyst.",
+    "Every night when we close, the till saves a table with everything we sold that day.",
+    "Your job is to ask that table questions and bring the answers back to the team. Let's learn how."
+  ];
+  let k=0;
+  stage.innerHTML = world(1)+`<h2>Day 1: onboarding</h2>`+say("Pip, senior analyst", lines[0])+
+    `<div class="row"><span class="spacer"></span><button class="btn" id="nx">Next</button></div>`;
+  $("#nx").onclick = () => {
+    sfx.click(); k++;
+    if(k<lines.length){ const p=stage.querySelector(".tw"); p.innerHTML=lines[k]; typewrite(p); if(k===lines.length-1) $("#nx").textContent="Show me"; }
+    else next();
+  };
+},
+
+/* what is SQL */
+() => {
+  stage.innerHTML = world(2)+`<h2>Meet SQL</h2>`+
+    say("Pip", "SQL stands for <b>Structured Query Language</b>. It's the language we use to create, design and maintain databases, and to ask them questions.")+
+    `<div class="uses">
+      <div class="use"><b>Create</b>Make new tables to store data.</div>
+      <div class="use"><b>Design</b>Decide which columns a table has.</div>
+      <div class="use"><b>Maintain</b>Add, fix and tidy the data.</div>
+      <div class="use"><b>Query</b>Ask questions and get answers. That's today!</div>
+    </div>
+    <div class="row"><span class="spacer"></span><button class="btn" id="nx">See the table</button></div>`;
+  $("#nx").onclick = () => { sfx.click(); next(); };
+},
+
+/* meet the table */
+() => {
+  stage.innerHTML = world(3)+`<h2>Today's sales table</h2>`+
+    say("Pip", "This is <b>daily_sales</b>. Each row is one flavor. Each column stores one kind of information. Tap every column name to learn what it holds.")+
+    tableHTML(COLS,{tap:true})+
+    `<div class="colinfo" id="info">Tap a column name above.</div>
+    <div class="stats" id="stats" hidden>
+      <div class="stat"><b>8</b>rows = 8 flavors</div>
+      <div class="stat"><b>4</b>columns</div>
+      <div class="stat"><b>$${ROWS.reduce((a,r)=>a+r.revenue,0).toFixed(2)}</b>total revenue today</div>
+    </div>
+    <div class="row"><span class="spacer"></span><button class="btn" id="nx" disabled>Continue</button></div>`;
+  const seen = new Set();
+  stage.querySelectorAll("th.tap").forEach(th=>{
+    const act = () => {
+      sfx.click(); const c=th.dataset.col; seen.add(c); th.classList.add("seen");
+      $("#info").innerHTML = `<b style="font-family:var(--mono)">${c}</b>: ${COLINFO[c]}`;
+      stage.querySelectorAll("td,th").forEach(x=>x.classList.remove("col-hl"));
+      const idx = COLS.indexOf(c)+1;
+      stage.querySelectorAll(`tr > *:nth-child(${idx})`).forEach(x=>x.classList.add("col-hl"));
+      if(seen.size===COLS.length){ $("#stats").hidden=false; $("#nx").disabled=false; }
+    };
+    th.onclick = act; th.onkeydown = e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); act(); } };
+  });
+  $("#nx").onclick = () => { sfx.click(); next(); };
+},
+
+/* manager message */
+() => {
+  stage.innerHTML = world(4)+`<h2>New message</h2>
+    <div class="notif" role="alert"><div class="av">R</div><div><b>Rosa, shop manager</b><small>just now</small>
+    Hi! Welcome aboard. Could you send me the list of ice cream flavors we sold today?</div></div>`+
+    say("Pip", "Your first request! To pull a list out of a table, we use the <b>SELECT</b> clause. Let me show you how it's built.")+
+    `<div class="row"><span class="spacer"></span><button class="btn" id="nx">Show me SELECT</button></div>`;
+  sfx.ding();
+  $("#nx").onclick = () => { sfx.click(); next(); };
+},
+
+/* syntax animation */
+() => {
+  const toks = [
+    ["SELECT","kw","pick the columns"],["column","ph","which column?"],["FROM","kw","where from"],["table","ph","which table?"],[";","","end of query"]
+  ];
+  stage.innerHTML = world(5)+`<h2>How SELECT works</h2>
+    <div class="code build" id="build">${toks.map(([t,c,l],i)=>`<div class="tok" data-i="${i}"><code class="${c}">${t}</code><small>${l}</small></div>`).join("")}</div>
+    <p id="cap" class="muted">Watch the query build, one piece at a time.</p>
+    <div id="out"></div>
+    <div class="row"><button class="btn alt" id="rp">Replay</button><span class="spacer"></span><button class="btn" id="nx" disabled>Try it yourself</button></div>`;
+  let timers=[];
+  const play = () => {
+    timers.forEach(clearTimeout); timers=[];
+    const T = stage.querySelectorAll(".tok");
+    T.forEach(t=>t.classList.remove("on"));
+    T[1].querySelector("code").className="ph"; T[1].querySelector("code").textContent="column";
+    T[3].querySelector("code").className="ph"; T[3].querySelector("code").textContent="table";
+    $("#out").innerHTML = ""; $("#cap").textContent="Watch the query build, one piece at a time.";
+    const step = reduced?0:700;
+    T.forEach((t,i)=>timers.push(setTimeout(()=>{ t.classList.add("on"); sfx.click(); }, step*(i+1))));
+    timers.push(setTimeout(()=>{
+      $("#cap").textContent = "Now fill in the blanks for Rosa's request: the flavor column, from the daily_sales table.";
+      const c1=T[1].querySelector("code"), c3=T[3].querySelector("code");
+      c1.className="filled"; c1.textContent="flavor"; c3.className="filled"; c3.textContent="daily_sales";
+      sfx.ding();
+    }, step*7));
+    timers.push(setTimeout(()=>{
+      $("#out").innerHTML = `<p class="lbl">THE DATABASE LOOKS AT…</p>`+tableHTML(COLS,{hl:["flavor"],dim:true,cls:"pop-in"});
+    }, step*9));
+    timers.push(setTimeout(()=>{
+      $("#out").innerHTML += `<p class="lbl">…AND RETURNS ONLY THAT COLUMN</p>`+tableHTML(["flavor"],{caption:"result · 8 rows",cls:"pop-in"});
+      $("#nx").disabled=false; $("#cap").textContent="SELECT picks the columns. FROM names the table. The semicolon ends the query.";
+    }, step*11));
+  };
+  $("#rp").onclick = play; $("#nx").onclick = () => { sfx.click(); next(); };
+  play();
+},
+
+/* scramble */
+() => {
+  const answer = ["SELECT","flavor","FROM","daily_sales",";"];
+  let bank = [...answer];
+  do{ bank.sort(()=>Math.random()-.5); }while(bank.join()===answer.join());
+  stage.innerHTML = world(6)+`<h2>Unscramble the query</h2>`+
+    say("Pip","The blocks got mixed up! Tap them in the right order to rebuild the query for Rosa. Tap a placed block to send it back.")+
+    `<div class="slots" id="slots" aria-label="Your query"></div>
+    <div class="bank" id="bank">${bank.map((t,i)=>`<button class="tile ${["SELECT","FROM"].includes(t)?"kwt":""}" data-i="${i}">${t}</button>`).join("")}</div>
+    <div class="fb" id="fb"></div><div id="out"></div>
+    <div class="row"><button class="btn alt" id="rs">Reset</button><span class="spacer"></span><button class="btn" id="nx" disabled>Next mission</button></div>`;
+  let placed=[], done=false;
+  const slots=$("#slots"), fb=$("#fb");
+  const draw = () => {
+    slots.innerHTML = placed.map((i,k)=>`<button class="tile ${["SELECT","FROM"].includes(bank[i])?"kwt":""}" data-k="${k}">${bank[i]}</button>`).join("");
+    stage.querySelectorAll("#bank .tile").forEach(b=>b.classList.toggle("used", placed.includes(+b.dataset.i)));
+    slots.querySelectorAll(".tile").forEach(b=>b.onclick=()=>{ if(done) return; placed.splice(+b.dataset.k,1); sfx.click(); draw(); });
+    if(placed.length===answer.length) check();
+  };
+  const check = () => {
+    const got = placed.map(i=>bank[i]);
+    if(got.join(" ")===answer.join(" ")){
+      done=true; fb.className="fb show ok";
+      fb.innerHTML = "<b>Query runs!</b> <code>SELECT flavor FROM daily_sales;</code> Sent to Rosa. She replies: “Perfect, thank you!”";
+      $("#out").innerHTML = tableHTML(["flavor"],{caption:"result · 8 rows",cls:"pop-in"});
+      addCoins(10); $("#nx").disabled=false;
+    }else{
+      sfx.bad(); fb.className="fb show err";
+      fb.textContent = got[0]!=="SELECT" ? "Every query starts with SELECT. Tap Reset and try again."
+        : got[1]!=="flavor" ? "Right after SELECT comes the column you want." 
+        : got[2]!=="FROM" ? "After the column, say where to look: FROM."
+        : "The semicolon goes last, to end the query.";
+      slots.classList.remove("shake"); void slots.offsetWidth; slots.classList.add("shake");
+    }
+  };
+  stage.querySelectorAll("#bank .tile").forEach(b=>b.onclick=()=>{ if(done||placed.includes(+b.dataset.i)) return; sfx.click(); placed.push(+b.dataset.i); fb.className="fb"; draw(); });
+  $("#rs").onclick = () => { if(done) return; placed=[]; fb.className="fb"; draw(); };
+  $("#nx").onclick = () => { sfx.click(); next(); };
+},
+
+/* missions */
+...[
+  { n:7, title:"Mission 1: prices", ask:"Quick one: can you pull up the price for each flavor? I'm checking our menu board.", goal:"Return only the price column.", expect:["price"],
+    hints:["Same shape as before: SELECT ___ FROM daily_sales;","SELECT price FROM daily_sales;"] },
+  { n:8, title:"Mission 2: flavor and price", ask:"Prices alone are hard to read. Can I see each flavor next to its price?", goal:"Return the flavor and price columns.", expect:["flavor","price"],
+    teach:"To select more than one column, list them with commas between: SELECT col1, col2 FROM …",
+    hints:["List both columns after SELECT, with a comma between them.","SELECT flavor, price FROM daily_sales;"] },
+  { n:9, title:"Mission 3: add revenue", ask:"Great. Now add how much money each flavor made today, please.", goal:"Return flavor, price and revenue.", expect:["flavor","price","revenue"],
+    hints:["Three columns, two commas.","SELECT flavor, price, revenue FROM daily_sales;"] },
+  { n:10, title:"Mission 4: everything", ask:"Last thing today: send me all the data we have on each flavor.", goal:"Return every column in the table.", expect:[...COLS], star:true,
+    teach:"Shortcut: the asterisk * means “every column”. SELECT * FROM daily_sales; returns the whole table.",
+    hints:["You could list all four columns… or use the * shortcut.","SELECT * FROM daily_sales;"] }
+].map(M => () => {
+  stage.innerHTML = world(M.n)+`<h2>${M.title}</h2>
+    <div class="notif"><div class="av">R</div><div><b>Rosa, shop manager</b><small>just now</small>${M.ask}</div></div>`+
+    (M.teach? say("Pip", M.teach) : "")+
+    `<div class="goal"><b>GOAL</b><br>${M.goal}</div>
+    <div class="two">
+      <div>
+        <label class="lbl" for="q">YOUR QUERY</label>
+        <div class="editor"><span aria-hidden="true">&gt;</span><input id="q" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="SELECT … FROM …;"></div>
+        <div class="chips" aria-label="Insert words">
+          ${["SELECT","FROM",TABLE,...(M.star?["*"]:[]),...COLS,",",";"].map(w=>`<button class="chip ${["SELECT","FROM"].includes(w)?"k":""}" data-w="${w}">${w}</button>`).join("")}
+        </div>
+        <div class="row" style="margin-top:.5rem"><button class="btn go" id="run">Run query</button><button class="btn alt" id="hint">Hint</button><button class="btn alt" id="clr">Clear</button></div>
+        <div class="fb" id="fb"></div>
+      </div>
+      <div><p class="lbl" id="srcl">SOURCE TABLE</p><div id="src">${tableHTML(COLS)}</div><div id="out"></div></div>
+    </div>
+    <div class="row"><span class="spacer"></span><button class="btn" id="nx" disabled>${M.n===10?"Finish the day":"Next mission"}</button></div>`;
+  const q=$("#q"), fb=$("#fb"); let tries=0, hintN=0, solved=false;
+  q.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); run(); } });
+  stage.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+    const w=c.dataset.w, v=q.value, pos=q.selectionStart??v.length;
+    let before=v.slice(0,pos), after=v.slice(pos);
+    let ins = (w===","||w===";") ? w : ((before && !/\s$/.test(before))?" ":"")+w;
+    if(w===",") ins = ", ";
+    before = (w===","||w===";") ? before.replace(/\s+$/,"") : before;
+    q.value = before+ins+after; const p=(before+ins).length; q.focus(); q.setSelectionRange(p,p); sfx.click();
+  });
+  $("#clr").onclick = () => { q.value=""; q.focus(); };
+  $("#hint").onclick = () => { sfx.click(); fb.className="fb show warn"; fb.innerHTML = "<b>Hint:</b> "+M.hints[Math.min(hintN,M.hints.length-1)]; hintN++; };
+  function run(){
+    const r = runSQL(q.value);
+    if(r.err){
+      tries++; sfx.bad(); fb.className="fb show err"; fb.innerHTML="<b>Error:</b> "+r.err;
+      $("#src").innerHTML = tableHTML(COLS); $("#out").innerHTML="";
+      return;
+    }
+    $("#src").innerHTML = tableHTML(COLS,{hl:r.cols,dim:true});
+    $("#out").innerHTML = `<p class="lbl">RESULT</p>`+tableHTML(r.cols,{caption:`result · ${ROWS.length} rows, ${r.cols.length} column${r.cols.length>1?"s":""}`,cls:"pop-in"});
+    const same = r.cols.length===M.expect.length && M.expect.every(c=>r.cols.includes(c));
+    if(!same){
+      tries++; sfx.bad(); fb.className="fb show warn";
+      const missing = M.expect.filter(c=>!r.cols.includes(c)), extra = r.cols.filter(c=>!M.expect.includes(c));
+      fb.innerHTML = "<b>The query ran</b>, but it's not what Rosa asked for. "+
+        (missing.length?`Missing: <code>${missing.join(", ")}</code>. `:"")+(extra.length?`Not needed: <code>${extra.join(", ")}</code>.`:"");
+      return;
+    }
+    if(solved) return;
+    solved=true;
+    const bonus = (tries===0 && hintN===0) ? 5 : 0;
+    const orderNote = r.cols.join()!==M.expect.join() && !r.star ? " Your columns come out in the order you listed them." : "";
+    const starNote = M.star && !r.star ? " It works! Next time try the shortcut: SELECT * FROM daily_sales;" : "";
+    fb.className="fb show ok";
+    fb.innerHTML = `<b>Correct!</b> Sent to Rosa. She replies: “${["Thanks, that's exactly it.","Much easier to read, thank you!","Love this. Chocolate is doing well!","Amazing work for day one!"][M.n-7]}”`+orderNote+starNote+(bonus?" <b>First-try bonus!</b>":"");
+    addCoins(10+bonus); $("#nx").disabled=false;
+  }
+  $("#run").onclick = run;
+  $("#nx").onclick = () => { sfx.click(); next(); };
+}),
+
+/* finale */
+() => {
+  sfx.win();
+  stage.innerHTML = `<div class="title">${mascot()}<h1>Day 1 complete</h1>
+    <span class="badge">SELECT SCOOPER · ${coins} COINS</span>
+    <p>You answered every request Rosa sent today. Here's your cheat sheet.</p></div>
+    <div class="code" style="line-height:2">
+      <span class="kw">SELECT</span> <span class="id">flavor</span> <span class="kw">FROM</span> <span class="id">daily_sales</span>;<span style="color:#E9D8C4"> -- one column</span><br>
+      <span class="kw">SELECT</span> <span class="id">flavor, price</span> <span class="kw">FROM</span> <span class="id">daily_sales</span>;<span style="color:#E9D8C4"> -- several, with commas</span><br>
+      <span class="kw">SELECT</span> <span class="id">*</span> <span class="kw">FROM</span> <span class="id">daily_sales</span>;<span style="color:#E9D8C4"> -- every column</span>
+    </div>`+
+    say("Pip","Tomorrow Rosa will want only the best sellers. For that we'll need WHERE and ORDER BY. Rest up!")+
+    `<div class="row"><button class="btn alt" id="again">Play again</button></div>`;
+  $("#again").onclick = () => { coins=0; $("#coins").textContent=0; go(0); };
+}
+];
+
+renderPips(); go(0);
+</script>
+</body>
+</html>
